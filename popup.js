@@ -101,4 +101,12 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
       }
     );
   });
+  chrome.storage.local.set({ leetcodeAccepted: false });
+});
+
+// On popup load, check if last submission was accepted
+chrome.storage.local.get(["leetcodeAccepted"], (data) => {
+  if (data.leetcodeAccepted) {
+    document.getElementById("fetchBtn").disabled = false;
+  }
 });

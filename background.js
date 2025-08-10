@@ -98,6 +98,9 @@ ${code}
 
      if (message.action === "leetcodeAccepted") {
   console.log("Background: Received leetcodeAccepted message");
+
+  chrome.storage.local.set({ leetcodeAccepted: true });
+
   chrome.notifications.create({
     type: "basic",
     iconUrl: "icons/icon48.png",
