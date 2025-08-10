@@ -7,14 +7,22 @@
 <body>
   <h1>LeetSync Settings</h1>
   
+  <!-- Settings form -->
+  <div id = "settingsForm">
   <label>GitHub Repository URL:</label>
   <input type="text" id="repoUrl" placeholder="https://github.com/user/repo">
 
   <label>GitHub Personal Access Token:</label>
   <input type="password" id="githubToken" placeholder="ghp_xxxxxxx">
-
-
   <button id="saveBtn">Save</button>
+  </div>
+
+  <!-- User info display -->
+  <div id="userInfo" style="display:none; margin-top: 10px; font-size: medium;">
+    <span id="usernameDisplay"></span>
+    <button id="deleteBtn">Delete</button>
+  </div>
+
   <hr>
   <button id="fetchBtn" disabled>Push to GitHub</button>
 
