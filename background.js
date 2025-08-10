@@ -100,7 +100,7 @@ ${code}
   console.log("Background: Received leetcodeAccepted message");
   chrome.notifications.create({
     type: "basic",
-    iconUrl: "icons/icon48.png", // relative path inside extension
+    iconUrl: "icons/icon48.png",
     title: "LeetCode Submission Accepted",
     message: "Click here to push your code to GitHub"
   }, (notificationId) => {
