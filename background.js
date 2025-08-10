@@ -1,3 +1,19 @@
+function wrapComment(text, lang) {
+    const commentStyles = {
+        py: {start: '"""', end:'"""'},
+        rb:   { start: '=begin', end: '=end' },
+        rkt:  { start: '#|', end: '|#' },
+        ex:   { start: '###', end: '###' },
+        erl:  { start: '%', end: '' },
+        sh:   { start: '#', end: '' },
+        default: { start: '/**', end: '*/' }
+    };
+    const style = commentStyles[lang] || commentStyles.default;
+    return style.end
+        ?`${style.start}\n${text}\n${style.end}`
+        :text.split('\n').map(line => `${style.start} ${line}`).join('\n');
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message) {
         console.error("Received undefined or null message");
@@ -23,8 +39,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const safeTitle = title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
                 const filePath = `${topic}/${safeTitle}.${lang}`;
 
+
+
+
+                const probStatement = wrapComment(statement, lang);
+                const fileContent = `${probStatement}\n\n${code}`;
+
                 // Prepend statement as comment
-                const fileContent = `/*\n${statement}\n*/\n\n${code}`;
+                // const fileContent = `/*\n${statement}\n*/\n\n${code}`;
                 const encodedContent = btoa(unescape(encodeURIComponent(fileContent)));
 
                 // Extract owner/repo from URL
