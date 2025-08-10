@@ -71,6 +71,13 @@ window.addEventListener("message", event => {
   if (event.source !== window) return;
   if (event.data.type && event.data.type === "LeetCodeSubmissionAccepted") {
     console.log("Received LeetCode submission accepted message from injected script");
-    chrome.runtime.sendMessage({ action: "leetcodeAccepted" });
+    chrome.runtime.sendMessage({ action: "leetcodeAccepted" }, response => {
+  if (chrome.runtime.lastError) {
+    console.error("SendMessage failed:", chrome.runtime.lastError.message);
+  } else {
+    console.log("Message sent successfully:", response);
+  }
+});
+
   }
 });
