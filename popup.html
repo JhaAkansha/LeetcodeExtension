@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LeetSync</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>LeetSync Settings</h1>
+  
+  <label>GitHub Repository URL:</label>
+  <input type="text" id="repoUrl" placeholder="https://github.com/user/repo">
+
+  <label>GitHub Personal Access Token:</label>
+  <input type="password" id="githubToken" placeholder="ghp_xxxxxxx">
+
+
+  <button id="saveBtn">Save</button>
+  <hr>
+  <button id="fetchBtn">Fetch Problem Data</button>
+
+  <pre id="output" style="white-space: pre-wrap; margin-top: 10px;"></pre>
+
+  <script src="popup.js"></script>
+</body>
+</html>
