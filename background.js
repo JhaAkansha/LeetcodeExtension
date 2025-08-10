@@ -1,3 +1,5 @@
+const api = typeof browser !== "undefined" ? browser : chrome;
+
 function wrapComment(text, lang) {
     const commentStyles = {
         py: {start: '"""', end:'"""'},
@@ -14,7 +16,7 @@ function wrapComment(text, lang) {
         :text.split('\n').map(line => `${style.start} ${line}`).join('\n');
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message) {
         console.error("Received undefined or null message");
         return;
@@ -25,9 +27,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.action === "pushToGitHub") {
-        chrome.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
+        api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
             if (!repoUrl || !githubToken) {
-                chrome.runtime.sendMessage({ type: "error", message: "Please set your GitHub repo URL and token in the popup." });
+                api.runtime.sendMessage({ type: "error", message: "Please set your GitHub repo URL and token in the popup." });
                 return;
             }
 
@@ -80,7 +82,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
 
                 if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
-                chrome.notifications.create({
+                api.notifications.create({
                     type: "basic",
                     iconUrl: "icons/icon48.png",
                     title: "LeetSync",
@@ -88,7 +90,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
             } catch (err) {
                 console.error(err);
-                chrome.runtime.sendMessage({ type: "error", message: err.toString() });
+                api.runtime.sendMessage({ type: "error", message: err.toString() });
             }
         });
     }
@@ -121,16 +123,16 @@ ${code}
      if (message.action === "leetcodeAccepted") {
   console.log("Background: Received leetcodeAccepted message");
 
-  chrome.storage.local.set({ leetcodeAccepted: true });
+  api.storage.local.set({ leetcodeAccepted: true });
 
-  chrome.notifications.create({
+  api.notifications.create({
     type: "basic",
     iconUrl: "icons/icon48.png",
     title: "LeetCode Submission Accepted",
     message: "Click here to push your code to GitHub"
   }, (notificationId) => {
-    if (chrome.runtime.lastError) {
-      console.error("Notification error:", chrome.runtime.lastError);
+    if (api.runtime.lastError) {
+      console.error("Notification error:", api.runtime.lastError);
     } else {
       console.log("Notification created with ID:", notificationId);
     }
@@ -144,7 +146,7 @@ ${code}
 
 async function uploadToGitHub(filename, content, topic) {
     return new Promise((resolve, reject) => {
-        chrome.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
+        api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
             if (!repoUrl || !githubToken) {
                 return reject("GitHub repo or token not set");
             }
