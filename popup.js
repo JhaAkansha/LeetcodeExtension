@@ -76,8 +76,14 @@ document.getElementById("saveBtn").addEventListener("click", () => {
   const repoUrl = document.getElementById("repoUrl").value.trim();
   const githubToken = document.getElementById("githubToken").value.trim();
 
+  if (!repoUrl || !githubToken) {
+    alert("Please enter both Repo URL and GitHub Token");
+    return;
+  }
+
   chrome.storage.sync.set({ repoUrl, githubToken }, () => {
-    alert("Settings saved!");
+    const username = getUsernameFromRepoUrl(repoUrl);
+    showUserInfo(username);
   });
 });
 
@@ -95,13 +101,13 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
 
           // Send to background script for GitHub push
           chrome.runtime.sendMessage({ action: "pushToGitHub", problemData });
+          chrome.storage.local.set({ leetcodeAccepted: false });
         } else {
           alert("Could not fetch problem data. Open a LeetCode problem page.");
         }
       }
     );
   });
-  chrome.storage.local.set({ leetcodeAccepted: false });
 });
 
 // On popup load, check if last submission was accepted
@@ -109,4 +115,42 @@ chrome.storage.local.get(["leetcodeAccepted"], (data) => {
   if (data.leetcodeAccepted) {
     document.getElementById("fetchBtn").disabled = false;
   }
+});
+
+
+// Extract GitHub username from repo URL
+function getUsernameFromRepoUrl(url) {
+  try {
+    const match = url.match(/github\.com\/([^\/]+)/);
+    return match ? match[1] : "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
+
+function showUserInfo(username) {
+  document.getElementById("settingsForm").style.display = "none";
+  document.getElementById("userInfo").style.display = "block";
+  document.getElementById("usernameDisplay").textContent = `Logged in as: ${username}`;
+}
+
+function showSettingsForm() {
+  document.getElementById("settingsForm").style.display = "block";
+  document.getElementById("userInfo").style.display = "none";
+}
+
+// On popup load, check if details exist
+chrome.storage.sync.get(["repoUrl", "githubToken"], ({ repoUrl, githubToken }) => {
+  if (repoUrl && githubToken) {
+    const username = getUsernameFromRepoUrl(repoUrl);
+    showUserInfo(username);
+  } else {
+    showSettingsForm();
+  }
+});
+
+document.getElementById("deleteBtn").addEventListener("click", () => {
+  chrome.storage.sync.remove(["repoUrl", "githubToken"], () => {
+    showSettingsForm();
+  });
 });
