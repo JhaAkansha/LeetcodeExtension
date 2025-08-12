@@ -2,7 +2,11 @@ const api = typeof browser !== "undefined" ? browser : chrome;
 
 // This function will run in the page context
 function scrapeLeetCodeData() {
-  // Title
+  
+
+   // Get Monaco code through the injected script
+  return new Promise((resolve) => {
+    // Title
   let title = "Unknown Title";
   const titleEl = 
     document.querySelector('div[data-cy="question-title"]') ||
@@ -63,8 +67,6 @@ const langMap = {
 };
 lang = langMap[lang.toLowerCase()] || "txt";
 
-   // Get Monaco code through the injected script
-  return new Promise((resolve) => {
     getMonacoCode((code) => {
       resolve({ title, tags, statement, code, lang });
     });
