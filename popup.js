@@ -25,13 +25,6 @@ function scrapeLeetCodeData() {
     statement = possibleStatementEl.innerText.trim();
   }
 
-  // Code
-  let code = "";
-  const codeLines = document.querySelectorAll(".view-lines .view-line");
-  if (codeLines.length > 0) {
-    code = Array.from(codeLines).map(line => line.innerText).join("\n");
-  }
-
   // Language
   let lang = "";
   // Try to get from the language button/dropdown
@@ -70,7 +63,12 @@ const langMap = {
 };
 lang = langMap[lang.toLowerCase()] || "txt";
 
-  return { title, tags, statement, code, lang };
+   // Get Monaco code through the injected script
+  return new Promise((resolve) => {
+    getMonacoCode((code) => {
+      resolve({ title, tags, statement, code, lang });
+    });
+  });
 }
 
 // Save repo URL + token
@@ -97,7 +95,7 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
         target: { tabId: tabs[0].id },
         function: scrapeLeetCodeData
       },
-      (results) => {
+      async (results) => {
         if (results && results[0] && results[0].result) {
           const problemData = results[0].result;
 

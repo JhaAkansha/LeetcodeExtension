@@ -25,3 +25,15 @@ window.addEventListener("message", event => {
 
   }
 });
+
+function getMonacoCode(callback) {
+  window.addEventListener("message", function handler(event) {
+    if (event.source !== window) return;
+    if (event.data.type === "RESPONSE_LEETCODE_CODE") {
+      window.removeEventListener("message", handler);
+      callback(event.data.code);
+    }
+  });
+
+  window.postMessage({ type: "REQUEST_LEETCODE_CODE" }, "*");
+}
