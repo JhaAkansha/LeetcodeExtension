@@ -156,3 +156,21 @@ document.getElementById("deleteBtn").addEventListener("click", () => {
     showSettingsForm();
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const pushButton = document.getElementById("fetchBtn");
+  pushButton.disabled = true; // Always start disabled
+
+  // Listen for success messages from content script
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.data.type === "LeetCodeSubmissionAccepted") {
+      pushButton.disabled = false;
+    }
+  });
+
+  // Optional: Disable if you navigate away
+  window.addEventListener("beforeunload", () => {
+    pushButton.disabled = true;
+  });
+});
