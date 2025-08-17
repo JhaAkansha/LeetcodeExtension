@@ -102,9 +102,11 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Reset flag so button disables until next Accepted
         api.storage.local.set({ leetcodeAccepted: false, buttonState: "disabled" });
+        sendResponse({ success: true });
       } catch (err) {
         console.error(err);
         api.runtime.sendMessage({ type: "error", message: err.toString() });
+        sendResponse({ success: false, error: err.toString() });
         api.storage.local.set({ buttonState: "enabled" });
         api.runtime.sendMessage({type: "enablePushButton"});
       }
