@@ -118,7 +118,7 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
               if (response && response.success) {
                 fetchBtn.textContent = "Pushed!";
                 setTimeout(() => {
-                  fetchBtn.disabled = true; // stays disabled until next Accepted
+                  fetchBtn.disabled = true; // disabled until next Accepted
                   fetchBtn.textContent = "Push to GitHub";
                 }, 2000);
               }
