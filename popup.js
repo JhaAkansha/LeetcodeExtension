@@ -93,7 +93,7 @@ document.getElementById("saveBtn").addEventListener("click", () => {
 document.getElementById("fetchBtn").addEventListener("click", () => {
   const fetchBtn = document.getElementById("fetchBtn");
   fetchBtn.disabled = true;
-  fetchBtn.textContent = "Fetching...";
+  fetchBtn.textContent = "Pushing...";
 
   api.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     api.scripting.executeScript(
