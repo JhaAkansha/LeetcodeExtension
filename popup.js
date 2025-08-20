@@ -117,6 +117,10 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
               }
               if (response && response.success) {
                 fetchBtn.textContent = "Pushed!";
+                setTimeout(() => {
+                  fetchBtn.disabled = true; // stays disabled until next Accepted
+                  fetchBtn.textContent = "Push to GitHub";
+                }, 2000);
               }
               else{
                 alert("Upload failed: " + (response?.error || "Unknown error"));
