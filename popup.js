@@ -180,30 +180,35 @@ document.getElementById("deleteBtn").addEventListener("click", () => {
   });
 });
 
+// On load, restore button state from storage
 document.addEventListener("DOMContentLoaded", () => {
-  const fetchBtn = document.getElementById("fetchBtn");
-  fetchBtn.disabled = true;
+  const btn = document.getElementById("pushToGitHub");
 
-  chrome.storage.local.get("leetcodeAccepted", (data) => {
-    if (data.leetcodeAccepted) {
-      fetchBtn.disabled = false;
+  api.storage.local.get("buttonState", ({ buttonState }) => {
+    if (buttonState === "enabled") {
+      btn.disabled = false;
+      btn.textContent = "Push to GitHub";
+    } else if (buttonState === "pushing") {
+      btn.disabled = true;
+      btn.textContent = "Pushing...";
+    } else {
+      btn.disabled = true;
+      btn.textContent = "Push to GitHub";
     }
   });
 });
 
+// Still listen for live updates
 api.runtime.onMessage.addListener((msg) => {
   const btn = document.getElementById("pushToGitHub");
-
   if (msg.type === "disablePushButton") {
     btn.disabled = true;
     btn.textContent = "Pushing...";
   }
-
   if (msg.type === "enablePushButton") {
     btn.disabled = false;
     btn.textContent = "Push to GitHub";
   }
-
   if (msg.type === "error") {
     alert(msg.message);
   }

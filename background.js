@@ -25,7 +25,7 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === "leetcodeAccepted") {
     console.log("Background: Submission Accepted");
-    api.storage.local.set({ leetcodeAccepted: true });
+    api.storage.local.set({ leetcodeAccepted: true, buttonState: "enabled" });
     api.runtime.sendMessage({type: "enablePushButton"});
 
     api.notifications.create({
@@ -37,6 +37,7 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === "pushToGitHub") {
+    api.storage.local.set({ buttonState: "pushing" });
     api.runtime.sendMessage({type: "disablePushButton"});
     api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
       if (!repoUrl || !githubToken) {
@@ -100,10 +101,11 @@ api.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
 
         // Reset flag so button disables until next Accepted
-        api.storage.local.set({ leetcodeAccepted: false });
+        api.storage.local.set({ leetcodeAccepted: false, buttonState: "disabled" });
       } catch (err) {
         console.error(err);
         api.runtime.sendMessage({ type: "error", message: err.toString() });
+        api.storage.local.set({ buttonState: "enabled" });
         api.runtime.sendMessage({type: "enablePushButton"});
       }
     });
