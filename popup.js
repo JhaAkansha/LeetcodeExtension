@@ -91,6 +91,10 @@ document.getElementById("saveBtn").addEventListener("click", () => {
 
 
 document.getElementById("fetchBtn").addEventListener("click", () => {
+  const fetchBtn = document.getElementById("fetchBtn");
+  fetchBtn.disabled = true;
+  fetchBtn.textContent = "Fetching...";
+
   api.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     api.scripting.executeScript(
       {
@@ -102,10 +106,29 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
           const problemData = results[0].result;
 
           // Send to background script for GitHub push
-          api.runtime.sendMessage({ action: "pushToGitHub", problemData });
-          api.storage.local.set({ leetcodeAccepted: false });
+          api.runtime.sendMessage({ action: "pushToGitHub", problemData },
+            (response) => {
+              if (api.runtime.lastError) {
+                console.error("Runtime error:", api.runtime.lastError);
+                alert("Error: " + api.runtime.lastError.message);
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = "Push to GitHub";
+                return;
+              }
+              if (response && response.success) {
+                fetchBtn.textContent = "Pushed!";
+              }
+              else{
+                alert("Upload failed: " + (response?.error || "Unknown error"));
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = "Push to GitHub";
+              } 
+              }
+          );
         } else {
           alert("Could not fetch problem data. Open a LeetCode problem page.");
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = "Push to GitHub";
         }
       }
     );
@@ -155,4 +178,33 @@ document.getElementById("deleteBtn").addEventListener("click", () => {
   api.storage.sync.remove(["repoUrl", "githubToken"], () => {
     showSettingsForm();
   });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const fetchBtn = document.getElementById("fetchBtn");
+  fetchBtn.disabled = true;
+
+  chrome.storage.local.get("leetcodeAccepted", (data) => {
+    if (data.leetcodeAccepted) {
+      fetchBtn.disabled = false;
+    }
+  });
+});
+
+api.runtime.onMessage.addListener((msg) => {
+  const btn = document.getElementById("pushToGitHub");
+
+  if (msg.type === "disablePushButton") {
+    btn.disabled = true;
+    btn.textContent = "Pushing...";
+  }
+
+  if (msg.type === "enablePushButton") {
+    btn.disabled = false;
+    btn.textContent = "Push to GitHub";
+  }
+
+  if (msg.type === "error") {
+    alert(msg.message);
+  }
 });

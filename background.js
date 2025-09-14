@@ -1,197 +1,113 @@
+// background.js
 const api = typeof browser !== "undefined" ? browser : chrome;
 
 function wrapComment(text, lang) {
-    const commentStyles = {
-        py: {start: '"""', end:'"""'},
-        rb:   { start: '=begin', end: '=end' },
-        rkt:  { start: '#|', end: '|#' },
-        ex:   { start: '###', end: '###' },
-        erl:  { start: '%', end: '' },
-        sh:   { start: '#', end: '' },
-        default: { start: '/**', end: '*/' }
-    };
-    const style = commentStyles[lang] || commentStyles.default;
-    return style.end
-        ?`${style.start}\n${text}\n${style.end}`
-        :text.split('\n').map(line => `${style.start} ${line}`).join('\n');
+  const commentStyles = {
+    py: { start: '"""', end: '"""' },
+    rb: { start: "=begin", end: "=end" },
+    rkt: { start: "#|", end: "|#" },
+    ex: { start: "###", end: "###" },
+    erl: { start: "%", end: "" },
+    sh: { start: "#", end: "" },
+    default: { start: "/**", end: "*/" },
+  };
+  const style = commentStyles[lang] || commentStyles.default;
+  return style.end
+    ? `${style.start}\n${text}\n${style.end}`
+    : text
+        .split("\n")
+        .map((line) => `${style.start} ${line}`)
+        .join("\n");
 }
 
 api.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!message) {
-        console.error("Received undefined or null message");
-        return;
-    }
-    if (!message.action) {
-        console.error("Received message without action:", message);
-        return;
-    }
+  if (!message || !message.action) return;
 
-    if (message.action === "pushToGitHub") {
-        api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
-            if (!repoUrl || !githubToken) {
-                api.runtime.sendMessage({ type: "error", message: "Please set your GitHub repo URL and token in the popup." });
-                return;
-            }
+  if (message.action === "leetcodeAccepted") {
+    console.log("Background: Submission Accepted");
+    api.storage.local.set({ leetcodeAccepted: true });
+    api.runtime.sendMessage({type: "enablePushButton"});
 
-            try {
-                const { title, tags, statement, code, lang } = message.problemData;
+    api.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon48.png",
+      title: "LeetCode Submission Accepted",
+      message: "Open popup to push solution to GitHub",
+    });
+  }
 
-                // Prepare folder name and file name
-                const topic = tags.length > 0 ? tags[0] : "Misc";
-                const safeTitle = title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
-                const filePath = `${topic}/${safeTitle}.${lang}`;
-
-
-
-
-                const probStatement = wrapComment(statement, lang);
-                const fileContent = `${probStatement}\n\n${code}`;
-
-                // Prepend statement as comment
-                // const fileContent = `/*\n${statement}\n*/\n\n${code}`;
-                const encodedContent = btoa(unescape(encodeURIComponent(fileContent)));
-
-                // Extract owner/repo from URL
-                const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)(?:\.git)?/);
-                if (!match) throw new Error("Invalid GitHub repo URL");
-                const owner = match[1];
-                const repo = match[2];
-
-                // Create or update file on GitHub
-                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-
-                // Check if file exists to get sha
-                let sha = null;
-                const checkRes = await fetch(apiUrl, { headers: { Authorization: `token ${githubToken}` } });
-                if (checkRes.ok) {
-                    const data = await checkRes.json();
-                    sha = data.sha;
-                }
-
-                const res = await fetch(apiUrl, {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `token ${githubToken}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        message: `Add solution for ${title}`,
-                        content: encodedContent,
-                        sha: sha || undefined
-                    })
-                });
-
-                if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
-                api.notifications.create({
-                    type: "basic",
-                    iconUrl: "icons/icon48.png",
-                    title: "LeetSync",
-                    message: `Uploaded to GitHub: ${filePath}`
-                });
-            } catch (err) {
-                console.error(err);
-                api.runtime.sendMessage({ type: "error", message: err.toString() });
-            }
+  if (message.action === "pushToGitHub") {
+    api.runtime.sendMessage({type: "disablePushButton"});
+    api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
+      if (!repoUrl || !githubToken) {
+        api.runtime.sendMessage({
+          type: "error",
+          message: "Set your GitHub repo URL and token in popup.",
         });
-    }
+        api.runtime.sendMessage({type: "enablePushButton"});
+        return;
+      }
 
-    if (message.action === "uploadSolution") {
+      try {
         const { title, tags, statement, code, lang } = message.problemData;
         const topic = tags.length > 0 ? tags[0] : "Misc";
-        const filename = title.replace(/\s+/g, "_") + `.${lang}`;
-        const fileContent = `/*
-${title}
-Tags: ${tags.join(", ")}
-${statement}
-*/
-${code}
-`;
+        const safeTitle = title.replace(/[^\w\s]/gi, "").replace(/\s+/g, "_");
+        const filePath = `${topic}/${safeTitle}.${lang}`;
 
-        uploadToGitHub(filename, fileContent, topic)
-            .then(res => {
-                console.log("Uploaded:", res);
-                sendResponse({ success: true });
-            })
-            .catch(err => {
-                console.error(err);
-                sendResponse({ success: false, error: err });
-            });
+        const probStatement = wrapComment(statement, lang);
+        const fileContent = `${probStatement}\n\n${code}`;
+        const encodedContent = btoa(unescape(encodeURIComponent(fileContent)));
 
-        return true; // async
-    }
+        const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
+        if (!match) throw new Error("Invalid GitHub repo URL");
+        const owner = match[1];
+        const repo = match[2];
 
-     if (message.action === "leetcodeAccepted") {
-  console.log("Background: Received leetcodeAccepted message");
+        const safePath = `${topic}/${safeTitle}.${lang}`.replace(/\/+/g, '/');
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${safePath}`;
 
-  api.storage.local.set({ leetcodeAccepted: true });
-
-  api.notifications.create({
-    type: "basic",
-    iconUrl: "icons/icon48.png",
-    title: "LeetCode Submission Accepted",
-    message: "Click here to push your code to GitHub"
-  }, (notificationId) => {
-    if (api.runtime.lastError) {
-      console.error("Notification error:", api.runtime.lastError);
-    } else {
-      console.log("Notification created with ID:", notificationId);
-    }
-  });
-}
-
-
-    return true; // keep async responses alive
-
-});
-
-async function uploadToGitHub(filename, content, topic) {
-    return new Promise((resolve, reject) => {
-        api.storage.sync.get(["repoUrl", "githubToken"], async ({ repoUrl, githubToken }) => {
-            if (!repoUrl || !githubToken) {
-                return reject("GitHub repo or token not set");
-            }
-
-            const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-            if (!match) {
-                return reject("Invalid repo URL");
-            }
-            
-            const owner = match[1];
-            const repo = match[2];
-
-            const path = `${topic}/${filename}`;
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-
-            const base64Content = btoa(unescape(encodeURIComponent(content)));
-
-            // Check if file already exists (GET request)
-            let sha = null;
-            const existingFile = await fetch(apiUrl, {
-                headers: { Authorization: `token ${githubToken}` }
-            });
-            if (existingFile.status === 200) {
-                const data = await existingFile.json();
-                sha = data.sha;
-            }
-
-            const res = await fetch(apiUrl, {
-                method: "PUT",
-                headers: {
-                    Authorization: `token ${githubToken}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    message: `Add solution: ${filename}`,
-                    content: base64Content,
-                    sha
-                })
-            });
-
-            if (res.ok) {
-                resolve(await res.json());
-            } else {
-                reject(await res.text());
-            }
+        // Check if file exists
+        let sha = null;
+        const checkRes = await fetch(apiUrl, {
+          headers: { Authorization: `token ${githubToken}` },
         });
+        if (checkRes.ok) {
+          const data = await checkRes.json();
+          sha = data.sha;
+        }
+
+        // Upload
+        const res = await fetch(apiUrl, {
+          method: "PUT",
+          headers: {
+            Authorization: `token ${githubToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `Add solution for ${title}`,
+            content: encodedContent,
+            sha: sha || undefined,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+
+        api.notifications.create({
+          type: "basic",
+          iconUrl: "icons/icon48.png",
+          title: "LeetSync",
+          message: `Uploaded: ${filePath}`,
+        });
+
+        // Reset flag so button disables until next Accepted
+        api.storage.local.set({ leetcodeAccepted: false });
+      } catch (err) {
+        console.error(err);
+        api.runtime.sendMessage({ type: "error", message: err.toString() });
+        api.runtime.sendMessage({type: "enablePushButton"});
+      }
     });
-}
+  }
+
+  return true;
+});

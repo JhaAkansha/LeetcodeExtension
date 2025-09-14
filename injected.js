@@ -6,19 +6,19 @@ console.log("Injected script loaded.");
   window.fetch = async function(...args) {
     const response = await originalFetch.apply(this, args);
 
-    if (typeof args[0] === "string" && args[0].includes("/check/")) {
       try {
-        const cloned = response.clone();
-        const data = await cloned.json();
+        if (typeof args[0] === "string" && args[0].includes("/check/")) {
+          const cloned = response.clone();
+          const data = await cloned.json();
 
         if (data.status_code === 10 && (data.status_msg === "Accepted" || data.state === "SUCCESS")) {
           // Send a message to the content script via window.postMessage
           window.postMessage({ type: "LeetCodeSubmissionAccepted" }, "*");
         }
+      }
       } catch (e) {
         console.error("Error parsing fetch response in injected script:", e);
       }
-    }
     return response;
   };
 })();
@@ -39,7 +39,7 @@ console.log("Injected script loaded.");
     return "";
   };
 
-  window.addEventListener("message", event => {
+  window.addEventListener("message", (event) => {
     if (event.data && event.data.type === "REQUEST_LEETCODE_CODE") {
       window.postMessage({
         type: "RESPONSE_LEETCODE_CODE",
