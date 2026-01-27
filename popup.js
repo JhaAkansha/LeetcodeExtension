@@ -184,36 +184,22 @@ document.getElementById("deleteBtn").addEventListener("click", () => {
   });
 });
 
-// On load, restore button state from storage
 document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("pushToGitHub");
+  const btn = document.getElementById("fetchBtn");
 
-  api.storage.local.get("buttonState", ({ buttonState }) => {
-    if (buttonState === "enabled") {
-      btn.disabled = false;
-      btn.textContent = "Push to GitHub";
-    } else if (buttonState === "pushing") {
-      btn.disabled = true;
-      btn.textContent = "Pushing...";
-    } else {
-      btn.disabled = true;
-      btn.textContent = "Push to GitHub";
-    }
+  api.storage.local.get("leetcodeAccepted", ({ leetcodeAccepted }) => {
+    btn.disabled = !leetcodeAccepted;
   });
 });
 
-// Still listen for live updates
-api.runtime.onMessage.addListener((msg) => {
-  const btn = document.getElementById("pushToGitHub");
-  if (msg.type === "disablePushButton") {
-    btn.disabled = true;
-    btn.textContent = "Pushing...";
-  }
-  if (msg.type === "enablePushButton") {
-    btn.disabled = false;
-    btn.textContent = "Push to GitHub";
-  }
-  if (msg.type === "error") {
-    alert(msg.message);
+api.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+
+  if ("leetcodeAccepted" in changes) {
+    const btn = document.getElementById("fetchBtn");
+    if (!btn) return;
+
+    const accepted = changes.leetcodeAccepted.newValue;
+    btn.disabled = !accepted;
   }
 });

@@ -1,5 +1,8 @@
 const api = typeof browser !== "undefined" ? browser : chrome;
 
+// Reset acceptance state when a new problem page loads
+api.storage.local.set({ leetcodeAccepted: false });
+
 function injectScript(file) {
   const script = document.createElement('script');
   script.src = api.runtime.getURL(file);
@@ -10,12 +13,15 @@ function injectScript(file) {
 injectScript('injected.js');
 
 
-window.addEventListener("message", (event) => {
+window.addEventListener("message", event => {
   if (event.source !== window) return;
+
   if (event.data.type === "LeetCodeSubmissionAccepted") {
-    api.runtime.sendMessage({ action: "leetcodeAccepted" });
+    chrome.storage.local.set({ leetcodeAccepted: true });
+    chrome.runtime.sendMessage({ action: "leetcodeAccepted" });
   }
 });
+
 
 
 function getMonacoCode(callback) {
