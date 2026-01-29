@@ -1,24 +1,44 @@
 // Optional: intercept LeetCode's submission API calls to capture code & metadata
 console.log("Injected script loaded.");
 
-(function() {
+(function () {
   const originalFetch = window.fetch;
-  window.fetch = async function(...args) {
+
+  window.fetch = async function (...args) {
     const response = await originalFetch.apply(this, args);
 
-      try {
-        if (typeof args[0] === "string" && args[0].includes("/check/")) {
-          const cloned = response.clone();
-          const data = await cloned.json();
+    try {
+      if (typeof args[0] === "string" && args[0].includes("/check/")) {
+        const cloned = response.clone();
+        const data = await cloned.json();
 
-        if (data.status_code === 10 && (data.status_msg === "Accepted" || data.state === "SUCCESS")) {
-          // Send a message to the content script via window.postMessage
-          window.postMessage({ type: "LeetCodeSubmissionAccepted" }, "*");
+        let submissionId = data.submission_id;
+        if (submissionId === undefined || submissionId === null) return response;
+
+        // Normalize to string
+        submissionId = String(submissionId);
+
+        // Ignore Run Code
+        if (submissionId.startsWith("runcode_")) {
+          console.log("Ignored Run Code:", submissionId);
+          return response;
+        }
+
+        // Only trigger for SUCCESS + Accepted
+        if (data.state === "SUCCESS" && data.status_msg === "Accepted") {
+          if (!window.__leetAccepted) window.__leetAccepted = new Set();
+          if (window.__leetAccepted.has(submissionId)) return response;
+
+          window.__leetAccepted.add(submissionId);
+
+          console.log("REAL SUBMIT ACCEPTED:", submissionId);
+          window.postMessage({ type: "LeetCodeSubmissionAccepted", submissionId }, "*");
         }
       }
-      } catch (e) {
-        console.error("Error parsing fetch response in injected script:", e);
-      }
+    } catch (e) {
+      console.error("Error in fetch hook:", e);
+    }
+
     return response;
   };
 })();
